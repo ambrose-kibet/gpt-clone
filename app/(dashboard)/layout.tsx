@@ -6,7 +6,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="drawer lg:drawer-open min-h-screen">
+    <div className="drawer lg:drawer-open min-h-screen ">
       <input id="my-drawer-2" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content flex flex-col items-center justify-center">
         <label
@@ -15,7 +15,9 @@ export default function RootLayout({
         >
           <FaBars />
         </label>
-        <div className="to-base-200 px-8 py-10 min-h-screen ">{children}</div>
+        <div className="to-base-200 px-8 py-10 min-h-screen min-w-full">
+          {children}
+        </div>
       </div>
       <Sidebar />
     </div>
