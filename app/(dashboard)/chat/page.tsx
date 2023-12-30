@@ -1,4 +1,5 @@
 import Chat from '@/app/components/Chat';
+
 import {
   dehydrate,
   HydrationBoundary,
