@@ -9,8 +9,6 @@ const ToggleButton = () => {
     night: 'forest',
   };
 
-  const [theme, setTheme] = useState(themes.garden);
-
   useEffect(() => {
     const localTheme = localStorage.getItem('theme');
     if (localTheme) {
@@ -18,6 +16,7 @@ const ToggleButton = () => {
       document.documentElement.setAttribute('data-theme', localTheme);
     }
   }, []);
+  const [theme, setTheme] = useState(themes.night);
 
   const toggleTheme = () => {
     const newTheme = theme === themes.garden ? themes.night : themes.garden;
