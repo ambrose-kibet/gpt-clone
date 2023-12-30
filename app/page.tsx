@@ -1,8 +1,12 @@
 import Link from 'next/link';
+import ToggleButton from './components/ToggleButton';
 
 const Home = () => {
   return (
     <main className="hero min-h-screen bg-base-200">
+      <div className="absolute top-0 right-2">
+        <ToggleButton />
+      </div>
       <div className="hero-content text-center">
         <div className="max-w-md">
           <h1 className="text-5xl font-bold text-primary">GPT Clone</h1>
