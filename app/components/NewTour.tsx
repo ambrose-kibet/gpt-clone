@@ -1,22 +1,29 @@
 'use client';
+import { fetchTour, generateTour } from '@/utils/actions';
 import { useMutation } from '@tanstack/react-query';
-
+export interface Destination {
+  city: string;
+  country: string;
+}
 const NewTours = () => {
   const { mutate, isPending, data } = useMutation({
-    mutationFn: async () => {
-      return new Promise<void>((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 2000);
-      });
+    mutationFn: async (tour: Destination) => {
+      const result = await fetchTour(tour);
+      if (result) {
+        return result;
+      }
+      const newTour = await generateTour(tour);
+      return newTour;
     },
   });
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const destinationForm = new FormData(e.currentTarget);
     const destination = Object.fromEntries(destinationForm.entries());
     // Object.fromEntries() method transforms a list of key-value pairs into an object.
-    mutate();
+    mutate(destination as unknown as Destination);
+    e.currentTarget.reset();
   };
   return (
     <div className="w-full flex flex-col">
