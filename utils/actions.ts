@@ -1,4 +1,5 @@
 'use server';
+import { Destination } from '@/app/components/NewTour';
 import OpenAI from 'openai';
 import { Chat, ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 
@@ -24,4 +25,20 @@ export const createChat = async (
   } catch (error) {
     return null;
   }
+};
+
+export const generateTour = async (
+  destination: Destination
+): Promise<string | null> => {
+  return null;
+};
+
+export const fetchTour = async (
+  destination: Destination
+): Promise<string | null> => {
+  return null;
+};
+
+export const fetchOrGenerateTour = async (destination: Destination) => {
+  return null;
 };
