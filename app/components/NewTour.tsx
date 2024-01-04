@@ -1,19 +1,30 @@
 'use client';
-import { fetchTour, generateTour } from '@/utils/actions';
+import {
+  createTour,
+  fetchExistingTour,
+  generateTourResponse,
+} from '@/utils/actions';
 import { useMutation } from '@tanstack/react-query';
-export interface Destination {
-  city: string;
-  country: string;
-}
+import toast from 'react-hot-toast';
+import TourInfo from './TourInfo';
+import { Destination, Tour } from '@/utils/types';
+
 const NewTours = () => {
   const { mutate, isPending, data } = useMutation({
     mutationFn: async (tour: Destination) => {
-      const result = await fetchTour(tour);
+      const result = await fetchExistingTour(tour);
+
       if (result) {
-        return result;
+        return { ...result, stops: JSON.parse(result.stops as string) };
       }
-      const newTour = await generateTour(tour);
-      return newTour;
+      const newTour = await generateTourResponse(tour);
+      if (newTour) {
+        console.log('newTour', newTour);
+        const other = await createTour(newTour);
+        console.log('other', other);
+        return newTour;
+      }
+      toast.error('No matching city found...');
     },
   });
 
@@ -53,6 +64,7 @@ const NewTours = () => {
           </button>
         </div>
       </form>
+      <TourInfo {...(data as Tour)} />
     </div>
   );
 };
