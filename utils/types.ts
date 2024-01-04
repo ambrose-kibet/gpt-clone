@@ -9,3 +9,5 @@ export type Destination = {
   city: string;
   country: string;
 };
+
+export type searchTerm = string | undefined;
