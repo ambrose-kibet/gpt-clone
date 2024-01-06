@@ -1,22 +1,39 @@
 'use client';
 
-import { createChat } from '@/utils/actions';
+import { createChat, decrementTokens, fetchUserTokens } from '@/utils/actions';
 import { useMutation } from '@tanstack/react-query';
 import { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import { FormEvent, useState } from 'react';
 import { IoSend } from 'react-icons/io5';
 import ChatLoading from '@/app/components/ChatLoading';
 import toast from 'react-hot-toast';
+import { useAuth } from '@clerk/nextjs';
 
 const Chat = () => {
   const [messages, setMessages] = useState<ChatCompletionMessageParam[]>([]);
   const [message, setMessage] = useState('');
+  const { userId } = useAuth();
   const { mutate, isPending, data } = useMutation({
-    mutationFn: (query: string) =>
-      createChat([...messages, { role: 'user', content: query }]),
-    onSuccess: (data) => {
-      if (!data) return toast.error('Something went wrong');
-      setMessages((prev) => [...prev, data as ChatCompletionMessageParam]);
+    mutationFn: async (query: string) => {
+      const tokens = await fetchUserTokens(userId as string);
+      if ((tokens?.token as number) < 100) {
+        toast.error('You have no tokens left. ');
+        return;
+      }
+      const response = await createChat([
+        ...messages,
+        { role: 'user', content: query },
+      ]);
+      if (!response) return toast.error('Something went wrong...');
+      setMessages((prev) => [
+        ...prev,
+        response.message as ChatCompletionMessageParam,
+      ]);
+      const newTokens = await decrementTokens(
+        userId as string,
+        response.tokens as number
+      );
+      toast.success(`You have ${newTokens} tokens left.`);
     },
   });
   const handleSubmit = (e: FormEvent<HTMLFormElement>) => {

@@ -20,6 +20,7 @@ const Tours = () => {
             type="text"
             name="search"
             className="join-item w-full input input-bordered"
+            placeholder="Search by city or country ..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

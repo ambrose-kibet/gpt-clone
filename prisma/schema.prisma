@@ -21,3 +21,12 @@ model Tour {
   updatedAt DateTime @updatedAt @map("updatedAt")
   @@unique([city, country])
 }
+
+model Token {
+  id      String    @id @default(auto()) @map("_id") @db.ObjectId
+  token    Int   @default(1500)
+  clerkId  String
+  createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+  @@unique([clerkId])
+}

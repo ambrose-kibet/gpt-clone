@@ -1,15 +1,20 @@
 'use client';
 import {
   createTour,
+  decrementTokens,
   fetchExistingTour,
+  fetchUserTokens,
   generateTourResponse,
 } from '@/utils/actions';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import TourInfo from './TourInfo';
 import { Destination, Tour } from '@/utils/types';
+import { useAuth } from '@clerk/nextjs';
+import { log } from 'console';
 
 const NewTours = () => {
+  const { userId } = useAuth();
   const queryClient = useQueryClient();
   const { mutate, isPending, data } = useMutation({
     mutationFn: async (tour: Destination) => {
@@ -17,13 +22,23 @@ const NewTours = () => {
       if (result) {
         return { ...result, stops: JSON.parse(result.stops as string) };
       }
-      const newTour = await generateTourResponse(tour);
-      if (newTour) {
-        await createTour(newTour);
-        await queryClient.invalidateQueries({ queryKey: ['tours'] });
-        return newTour;
+      // check for remaining tokens
+      const tokens = await fetchUserTokens(userId as string);
+      if ((tokens?.token as number) < 300) {
+        toast.error('You have no tokens left. ');
+        return;
       }
-      toast.error('No matching city found...');
+      const newTour = await generateTourResponse(tour);
+      if (!newTour) return toast.error('No matching city found...');
+
+      await createTour(newTour.tour);
+      queryClient.invalidateQueries({ queryKey: ['tours'] });
+      const newTokens = await decrementTokens(
+        userId as string,
+        newTour.tokens as number
+      );
+      toast.success(`You have ${newTokens} tokens left.`);
+      return newTour.tour;
     },
   });
 

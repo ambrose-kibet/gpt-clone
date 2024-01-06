@@ -3,14 +3,13 @@ import OpenAI from 'openai';
 import { Chat, ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import prisma from './db';
 import { Destination, Tour, searchTerm } from './types';
+import { revalidatePath } from 'next/cache';
 const key = process.env.OPEN_AI_KEY;
 const openai = new OpenAI({
   apiKey: key,
 });
 
-export const createChat = async (
-  messages: ChatCompletionMessageParam[]
-): Promise<Chat.Completions.ChatCompletionMessage | null> => {
+export const createChat = async (messages: ChatCompletionMessageParam[]) => {
   try {
     const completion = await openai.chat.completions.create({
       messages: [
@@ -19,9 +18,12 @@ export const createChat = async (
       ],
       model: 'gpt-3.5-turbo',
       temperature: 0,
+      max_tokens: 150,
     });
-
-    return completion?.choices[0]?.message;
+    return {
+      message: completion?.choices[0]?.message,
+      tokens: completion?.usage?.total_tokens,
+    };
   } catch (error) {
     return null;
   }
@@ -37,33 +39,29 @@ Once you have a list, create a one-day tour. Response should be  in the followin
     "country": "${country}",
     "title": "title of the tour",
     "description": "short description of the city and tour",
-    "stops": ["short paragraph on the stop 1 ", "short paragraph on the stop 2","short paragraph on the stop 3"]
+    "stops": [" stop name", "stop name","stop name"]
   }
 }
 "stops" property should include only three stops.
 If you can't find info on exact ${city}, or ${city} does not exist, or it's population is less than 1, or it is not located in the following ${country},   return { "tour": null }, with no additional characters.`;
   try {
-    const tourData = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+    const response = await openai.chat.completions.create({
       messages: [
-        {
-          role: 'system',
-          content: 'You are a tour guide.',
-        },
+        { role: 'system', content: 'you are a tour guide' },
         {
           role: 'user',
           content: query,
         },
       ],
+      model: 'gpt-3.5-turbo',
       temperature: 0,
     });
 
-    const tour = JSON.parse(tourData?.choices[0]?.message.content as string);
-
-    if (!tour.tour) {
+    const tourData = JSON.parse(response.choices[0].message.content as string);
+    if (!tourData.tour) {
       return null;
     }
-    return tour.tour;
+    return { tour: tourData.tour, tokens: response.usage?.total_tokens };
   } catch (error) {
     console.log(error);
     return null;
@@ -95,6 +93,7 @@ export const createTour = async (destination: Tour) => {
         stops: newStops,
       },
     });
+
     return tour;
   } catch (error) {
     console.log(error);
@@ -136,4 +135,53 @@ export const getSingleTour = async (id: string) => {
       id,
     },
   });
+};
+
+export const fetchUserTokens = async (clerkId: string) => {
+  const token = await prisma.token.findUnique({
+    where: {
+      clerkId,
+    },
+    select: {
+      token: true,
+    },
+  });
+  return token;
+};
+
+export const generateTokensForId = async (clerkId: string) => {
+  return prisma.token.create({
+    data: {
+      clerkId,
+    },
+    select: {
+      token: true,
+    },
+  });
+};
+
+export const fetchOrGenerateTokens = async (clerkId: string) => {
+  const tokens = await fetchUserTokens(clerkId);
+  if (tokens) {
+    return tokens.token;
+  }
+  return (await generateTokensForId(clerkId)).token;
+};
+
+export const decrementTokens = async (clerkId: string, value: number) => {
+  const results = await prisma.token.update({
+    where: {
+      clerkId,
+    },
+    data: {
+      token: {
+        decrement: value,
+      },
+    },
+    select: {
+      token: true,
+    },
+  });
+  revalidatePath('/profile');
+  return results.token;
 };
